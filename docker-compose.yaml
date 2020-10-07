@@ -1,0 +1,16 @@
+# Author: Marc Aldrich
+#
+# Date Last Modified: 2020 Oct 05
+# Date Created: 2020 Sept 20
+# Summary: Docker-compose file to deploy the mcu_firmware_manager service
+version: "3"
+services:
+  hardware_controller:
+    privileged: true
+    image: hub.foundries.io/tech-farm-af/mcu_firmware_manager:latest
+    restart: always
+    ports:
+      - "3080:8080"
+    devices:
+      - "/dev:/dev"
+      - "/sys:/sys"
