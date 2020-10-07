@@ -20,9 +20,12 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/spf13/cobra"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"mynewt.apache.org/newt/util"
@@ -31,6 +34,8 @@ import (
 	"mynewt.apache.org/newtmgr/newtmgr/nmutil"
 	"mynewt.apache.org/newtmgr/nmxact/nmserial"
 )
+var shutdown = make(chan bool)
+var rootCmd *cobra.Command
 
 func isSerial() bool {
 	x, err := cli.GetXportIfOpen()
@@ -108,5 +113,34 @@ func main() {
 		}
 	}()
 
-	cli.Commands().Execute()
+	rootCmd = cli.Commands()
+	go runCmdFromRest()
+
+	cliCommandRequest := &cli.CommandRequested{
+		EndPoint:              "COMMAND LINE",
+		AsCobraCompatibleArgs: strings.Join(os.Args[1:], " "),
+	}
+	cliCommandResult := cli.NewCommandResult(cliCommandRequest)
+	cli.CmdFromRestChan <- *cliCommandResult
+	<- cliCommandResult.ReturnReady
+}
+
+func runCmdFromRest() {
+	//Forever loop waiting for commands to run
+	for {
+		select {
+			case cmdFromRest := <- cli.CmdFromRestChan:
+				go func() {
+					output := new(bytes.Buffer)
+					rootCmd.SetOut(output)
+					rootCmd.SetErr(output)
+					rootCmd.SetArgs(strings.Split(cmdFromRest.Request.AsCobraCompatibleArgs  , " "))
+					rootCmd.Execute()
+
+					// Signal http func to finish
+					cmdFromRest.ReturnReady <- *output
+				}()
+			default:
+		}
+	}
 }

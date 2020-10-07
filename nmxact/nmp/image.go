@@ -19,6 +19,10 @@
 
 package nmp
 
+import (
+	"encoding/json"
+)
+
 //////////////////////////////////////////////////////////////////////////////
 // $upload                                                                  //
 //////////////////////////////////////////////////////////////////////////////
@@ -88,15 +92,23 @@ func (sm SplitStatus) String() string {
 
 type ImageStateEntry struct {
 	NmpBase
-	Image     int    `codec:"image"`
-	Slot      int    `codec:"slot"`
-	Version   string `codec:"version"`
-	Hash      []byte `codec:"hash"`
-	Bootable  bool   `codec:"bootable"`
-	Pending   bool   `codec:"pending"`
-	Confirmed bool   `codec:"confirmed"`
-	Active    bool   `codec:"active"`
-	Permanent bool   `codec:"permanent"`
+	Image     int    `codec:"image" json:"image"`
+	Slot      int    `codec:"slot" json:"slot"`
+	Version   string `codec:"version" json:"version"`
+	Hash      []byte `codec:"hash" json:"hash"`
+	Bootable  bool   `codec:"bootable" json:"bootable"`
+	Pending   bool   `codec:"pending" json:"pending"`
+	Confirmed bool   `codec:"confirmed" json:"confirmed"`
+	Active    bool   `codec:"active" json:"active"`
+	Permanent bool   `codec:"permanent" json:"permanent"`
+}
+
+func (i *ImageStateEntry) ToString() string {
+	data, err := json.MarshalIndent(i, "", "    ")
+	if err != nil {
+		return "Error marshaling JSON"
+	}
+	return string(data)
 }
 
 type ImageStateReadReq struct {

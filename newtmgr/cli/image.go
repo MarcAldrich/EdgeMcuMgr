@@ -21,7 +21,10 @@ package cli
 
 import (
 	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -66,28 +69,26 @@ func imageFlagsStr(image nmp.ImageStateEntry) string {
 	return strings.Join(strs, " ")
 }
 
-func imageStatePrintRsp(rsp *nmp.ImageStateRsp) error {
+func imageStateStringHelper(rsp *nmp.ImageStateRsp) (*cmdRspListImages, error) {
+	// Precondition check(s)
 	if rsp.Rc != 0 {
-		fmt.Printf("Error: %d\n", rsp.Rc)
-		return nil
-	}
-	fmt.Println("Images:")
-	for _, img := range rsp.Images {
-		fmt.Printf(" image=%d slot=%d\n", img.Image, img.Slot)
-		fmt.Printf("    version: %s\n", img.Version)
-		fmt.Printf("    bootable: %v\n", img.Bootable)
-		fmt.Printf("    flags: %s\n", imageFlagsStr(img))
-		if len(img.Hash) == 0 {
-			fmt.Printf("    hash: Unavailable\n")
-		} else {
-			fmt.Printf("    hash: %x\n", img.Hash)
-		}
+		return nil, errors.New(fmt.Sprintf("rsp.Rc is not 0 => rsp.Rc = %d\n", rsp.Rc))
 	}
 
+	// Build state string for each image found
+	imageStateData := &cmdRspListImages{
+		Images: nil,
+	}
+	imageStateData.Images = rsp.Images
+	return imageStateData, nil
+}
+
+func imageStatePrintRsp(rsp *nmp.ImageStateRsp) error {
 	fmt.Printf("Split status: %s (%d)\n", rsp.SplitStatus.String(),
 		rsp.SplitStatus)
 	return nil
 }
+
 
 func imageStateListCmd(cmd *cobra.Command, args []string) {
 	s, err := GetSesn()
@@ -103,10 +104,16 @@ func imageStateListCmd(cmd *cobra.Command, args []string) {
 		nmUsage(nil, util.ChildNewtError(err))
 	}
 	ires := res.(*xact.ImageStateReadResult)
-
-	if err := imageStatePrintRsp(ires.Rsp); err != nil {
-		nmUsage(nil, err)
+	builtJson, err := imageStateStringHelper(ires.Rsp)
+	if err != nil {
+		log.Printf("Error getting stats for image(s) => %s\n", err)
 	}
+
+	bytes, err := json.Marshal(builtJson)
+	if err != nil {
+		log.Printf("error: Marshalling list command response into json")
+	}
+	cmd.Printf(string(bytes))
 }
 
 func imageStateTestCmd(cmd *cobra.Command, args []string) {

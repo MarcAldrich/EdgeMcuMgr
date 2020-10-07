@@ -25,13 +25,16 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"mynewt.apache.org/newt/util"
 	"mynewt.apache.org/newtmgr/newtmgr/nmutil"
 	"mynewt.apache.org/newtmgr/nmxact/nmxutil"
 )
 
+
+
 var NewtmgrLogLevel log.Level
 var NewtmgrHelp bool
+var CmdFromRestChan = make(chan CommandResult, 10) //TODO: Add job type with auth metadata to log where command came from
+var rootCmd *cobra.Command
 
 func Commands() *cobra.Command {
 	logLevelStr := ""
@@ -39,20 +42,21 @@ func Commands() *cobra.Command {
 		Use:   nmutil.ToolInfo.ExeName,
 		Short: nmutil.ToolInfo.ShortName + " helps you manage remote devices",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			var err error
-			NewtmgrLogLevel, err = log.ParseLevel(logLevelStr)
-			if err != nil {
-				nmUsage(nil, util.ChildNewtError(err))
-			}
+			//var err error
+			//NewtmgrLogLevel, err = log.ParseLevel(logLevelStr)
+			//if err != nil {
+			//	nmUsage(nil, util.ChildNewtError(err))
+			//}
+			//
+			//err = util.Init(NewtmgrLogLevel, "", util.VERBOSITY_DEFAULT)
+			//if err != nil {
+			//	nmUsage(nil, err)
+			//}
+			//nmxutil.SetLogLevel(NewtmgrLogLevel)
+			//
+			//// Set cbgo log level if we're using macOS.
+			//OSSpecificInit()
 
-			err = util.Init(NewtmgrLogLevel, "", util.VERBOSITY_DEFAULT)
-			if err != nil {
-				nmUsage(nil, err)
-			}
-			nmxutil.SetLogLevel(NewtmgrLogLevel)
-
-			// Set cbgo log level if we're using macOS.
-			OSSpecificInit()
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.HelpFunc()(cmd, args)
@@ -121,6 +125,8 @@ func Commands() *cobra.Command {
 	nmCmd.AddCommand(resCmd())
 	nmCmd.AddCommand(interactiveCmd())
 	nmCmd.AddCommand(shellCmd())
+	nmCmd.AddCommand(restSvcCmd())
 
+	rootCmd = nmCmd
 	return nmCmd
 }
