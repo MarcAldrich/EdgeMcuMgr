@@ -9,7 +9,7 @@ FROM golang:alpine as BUILDER
 
 ENV GO111MODULE=on \
     CGO_ENABLED=0 \
-    GOOS=linux
+    GOOS=linux \
     GOARCH=arm \
     GOARM=7
 # Setup environment for Bluetooth
