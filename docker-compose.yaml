@@ -7,10 +7,10 @@ version: "3"
 services:
   hardware_controller:
     privileged: true
+    network_mode: host
     image: hub.foundries.io/tech-farm-af/mcu_firmware_manager:latest
     restart: always
     ports:
-      - "3080:8080"
+      - "8080:8080"
     devices:
-      - "/dev:/dev"
-      - "/sys:/sys"
+      - "/dev/ttyACM0:/dev/ttyACM0"
