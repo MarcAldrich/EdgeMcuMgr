@@ -120,6 +120,8 @@ func main() {
 		EndPoint:              "COMMAND LINE",
 		AsCobraCompatibleArgs: strings.Join(os.Args[1:], " "),
 	}
+	cli.SilenceErrors()
+	fmt.Printf("Running cli command ...")
 	cliCommandResult := cli.NewCommandResult(cliCommandRequest)
 	cli.CmdFromRestChan <- *cliCommandResult
 	<- cliCommandResult.ReturnReady
